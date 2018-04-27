@@ -33,7 +33,7 @@ static void gap_buffer_grow(gap_buffer *gb) {
 
 cursor increment_cursor(gap_buffer *gb, cursor position) {
     if(position >= gb->size) {
-        return gb->size;
+        return gb->size-1;
     }
 
     position++;
@@ -89,12 +89,12 @@ cursor gap_buffer_insert_at_cursor(gap_buffer* gb, char character, cursor positi
     return position;
 }
 
-cursor gap_buffer_delete_back(gap_buffer* gb, cursor position) {
+cursor gap_buffer_delete_backward(gap_buffer* gb, cursor position) {
     gap_buffer_move_gap(gb, position);
     if(gb->gap_start > 0) {
         gb->gap_start--;
+        position--;
     }
-    position--;
     return position;
 }
 

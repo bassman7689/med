@@ -33,11 +33,11 @@ bool editor_handle_input(gap_buffer *current_buff, int ch)
 				break;
 			case KEY_BACKSPACE:
 			case ALT_BACKSPACE:
-				current_buff->point = gap_buffer_delete_back(current_buff, current_buff->point);
+				current_buff->point = gap_buffer_delete_backward(current_buff, current_buff->point);
 				break;
 			case KEY_ENTER:
 			case ALT_ENTER:
-				gap_buffer_newline(current_buff, current_buff->point);
+				current_buff->point = gap_buffer_newline(current_buff, current_buff->point);
 				break;
 			case ALT_SPACE:
 				gap_buffer_insert_at_cursor(current_buff, ' ', current_buff->point);
@@ -78,8 +78,8 @@ void editor_fini(gap_buffer *current_buff)
 	nocbreak();
 	endwin();
 
-	printf("FINAL : \"");
-    gap_buffer_debug_print(current_buff);
-    printf("\"\n");
+	char *current_file = gap_buffer_render(current_buff);
+	printf("FINAL: \"%s\"\n", current_file);
+	free(current_file);
 	free_gap_buffer(current_buff);
 }
