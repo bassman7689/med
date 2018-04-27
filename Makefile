@@ -1,19 +1,28 @@
 CC=gcc
-CFLAGS=
-LDFLAGS=-lncurses -macosx_version_min 10.12 -lc
+CFLAGS=-I ./ext/GapBuffer
+LDFLAGS=-lncurses
 BUILDDIR=./build
-SOURCEDIR=./src
-OBJS=${BUILDDIR}/gap_buffer.o ${BUILDDIR}/editor.o ${BUILDDIR}/main.o
-SRCS=${SOURCEDIR}/gap_buffer.c ${SOURCEDIR}/editor.c ${SOURCEDIR}/main.c
+SRCDIR=./src
+SRCS=$(wildcard $(SRCDIR)/*.c)
+OBJS=$(patsubst $(SRCDIR)/%.c, $(BUILDDIR)/%.o, $(SRCS))
+APPNAME=med
 
-all: ${BUILDDIR} ${OBJS}
-	ld -o ${BUILDDIR}/med ${OBJS} ${LDFLAGS}
+all: $(BUILDDIR) $(APPNAME)
 
-${BUILDDIR}/%.o: ${SOURCEDIR}/%.c
-	${CC} ${CFLAGS} -c $< -o $@
+$(APPNAME): $(OBJS)
+	$(CC) $^ -o $(BUILDDIR)/$(APPNAME) $(LDFLAGS)
+
+$(BUILDDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 ${BUILDDIR}:
 	mkdir -p build
+
+.PHONY: run
+
+run: $(APPNAME)
+	$(BUILDDIR)/$(APPNAME)
+
 
 .PHONY: clean
 

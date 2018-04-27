@@ -5,7 +5,9 @@ gap_buffer* new_gap_buffer(unsigned int size) {
     gb->buffer = malloc(sizeof(char) * size);
     gb->gap_start = 0;
     gb->gap_end = size;
-    gb->size = size; return gb;
+    gb->size = size;
+    gb->point = 0;
+    return gb;
 }
 
 void free_gap_buffer(gap_buffer* gb) {
@@ -29,7 +31,33 @@ static void gap_buffer_grow(gap_buffer *gb) {
     gb->size = gb->size * 2;
 }
 
-static void gap_buffer_move_gap(gap_buffer *gb, unsigned int position) {
+cursor increment_cursor(gap_buffer *gb, cursor position) {
+    if(position >= gb->size) {
+        return gb->size;
+    }
+
+    position++;
+    if(position > gb->gap_start) {
+        position = gb->gap_end;
+    }
+
+    return position;
+}
+
+cursor decrement_cursor(gap_buffer *gb, cursor position) {
+    if (position <= 0) {
+        return 0;
+    }
+
+    position--;
+    if (gb->gap_start < position && gb->gap_end > position) {
+        position = gb->gap_start;
+    }
+
+    return position;
+}
+
+static void gap_buffer_move_gap(gap_buffer *gb, cursor position) {
     if (position < gb->gap_start) {
         unsigned int gap_delta = gb->gap_start - position;
 
@@ -47,25 +75,48 @@ static void gap_buffer_move_gap(gap_buffer *gb, unsigned int position) {
     }
 }
 
-void gap_buffer_insert_character_at_position(gap_buffer* gb, char character, unsigned int position) {
+cursor gap_buffer_insert_at_cursor(gap_buffer* gb, char character, cursor position) {
     gap_buffer_move_gap(gb, position);
 
     gb->buffer[gb->gap_start] = character;
     gb->gap_start++;
+    position++;
 
     if (gb->gap_start == gb->gap_end) {
         gap_buffer_grow(gb);
     }
+
+    return position;
 }
 
-void gap_buffer_delete_back(gap_buffer* gb, unsigned int position) {
+cursor gap_buffer_delete_back(gap_buffer* gb, cursor position) {
     gap_buffer_move_gap(gb, position);
-    gb->gap_start--;
+    if(gb->gap_start > 0) {
+        gb->gap_start--;
+    }
+    position--;
+    return position;
 }
 
-void gap_buffer_delete_forward(gap_buffer* gb, unsigned int position) {
+cursor gap_buffer_delete_forward(gap_buffer* gb, cursor position) {
     gap_buffer_move_gap(gb, position);
-    gb->gap_end++;
+    if (gb->gap_end < gb->size) {
+        gb->gap_end++;
+    }
+    return position;
+}
+
+cursor gap_buffer_newline(gap_buffer *gb, cursor position) {
+    return gap_buffer_insert_at_cursor(gb, '\n', position);
+}
+
+char *gap_buffer_render(gap_buffer *gb) {
+    int size = gb->size - gb->gap_end + gb->gap_start;
+    char *data = malloc(sizeof(char) * size + 1);
+    memmove(data, gb->buffer, gb->gap_start);
+    memmove(data + gb->gap_start, gb->buffer + gb->gap_end, gb->size - gb->gap_end);
+    data[size] = '\0';
+    return data;
 }
 
 
