@@ -19,7 +19,6 @@ bool editor_handle_input(gap_buffer *current_buff, int ch)
 	}
 	else
 	{
-
 		switch(ch)
 		{
 			case ALT_ESC_OR_ALT:

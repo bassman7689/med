@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "gap_buffer.h"
 
 gap_buffer* new_gap_buffer(unsigned int size) {
@@ -11,6 +13,8 @@ gap_buffer* new_gap_buffer(unsigned int size) {
 }
 
 void free_gap_buffer(gap_buffer* gb) {
+    assert(gb);
+    assert(gb->buffer);
     free(gb->buffer);
     free(gb);
 }
@@ -37,10 +41,11 @@ cursor increment_cursor(gap_buffer *gb, cursor position) {
     }
 
     position++;
-    if(position > gb->gap_start) {
+    if (position > gb->gap_start && position < gb->gap_end) {
         position = gb->gap_end;
     }
 
+    assert(position <= gb->gap_start || position >= gb->gap_end);
     return position;
 }
 
@@ -50,33 +55,49 @@ cursor decrement_cursor(gap_buffer *gb, cursor position) {
     }
 
     position--;
-    if (gb->gap_start < position && gb->gap_end > position) {
+    if (position > gb->gap_start && position < gb->gap_end) {
         position = gb->gap_start;
     }
 
+    assert(position <= gb->gap_start || position >= gb->gap_end);
     return position;
 }
 
-static void gap_buffer_move_gap(gap_buffer *gb, cursor position) {
+static cursor gap_buffer_move_gap(gap_buffer *gb, cursor position) {
     if (position < gb->gap_start) {
         unsigned int gap_delta = gb->gap_start - position;
 
-        gb->gap_start -= gap_delta;
-        gb->gap_end -= gap_delta;
+        int new_start = gb->gap_start - gap_delta;
+        int new_end = gb->gap_end - gap_delta;
 
+        gb->gap_start = new_start;
+        gb->gap_end = new_end;
+
+        assert((new_end - new_start) == (gb->gap_end - gb->gap_start));
         memmove(gb->buffer + gb->gap_end, gb->buffer + gb->gap_start, gap_delta);
     } else if (position > gb->gap_start) {
         unsigned int gap_delta = position - gb->gap_start;
 
+        unsigned int new_start = gb->gap_start + gap_delta;
+        if (new_start > gb->size - (gb->gap_end - gb->gap_start)) {
+            new_start = gb->size - (gb->gap_end - gb->gap_start);
+        }
+
+        int new_end = new_start + (gb->gap_end - gb->gap_start);
+
+        assert((new_end - new_start) == (gb->gap_end - gb->gap_start));
         memmove(gb->buffer + gb->gap_start, gb->buffer + gb->gap_end, gap_delta);
 
-        gb->gap_start += gap_delta;
-        gb->gap_end += gap_delta;
+        gb->gap_start = new_start;
+        gb->gap_end = new_end;
     }
+
+    position = gb->gap_start;
+    return position;
 }
 
 cursor gap_buffer_insert_at_cursor(gap_buffer* gb, char character, cursor position) {
-    gap_buffer_move_gap(gb, position);
+    position = gap_buffer_move_gap(gb, position);
 
     gb->buffer[gb->gap_start] = character;
     gb->gap_start++;
@@ -90,7 +111,7 @@ cursor gap_buffer_insert_at_cursor(gap_buffer* gb, char character, cursor positi
 }
 
 cursor gap_buffer_delete_backward(gap_buffer* gb, cursor position) {
-    gap_buffer_move_gap(gb, position);
+    position = gap_buffer_move_gap(gb, position);
     if(gb->gap_start > 0) {
         gb->gap_start--;
         position--;
@@ -99,7 +120,7 @@ cursor gap_buffer_delete_backward(gap_buffer* gb, cursor position) {
 }
 
 cursor gap_buffer_delete_forward(gap_buffer* gb, cursor position) {
-    gap_buffer_move_gap(gb, position);
+    position = gap_buffer_move_gap(gb, position);
     if (gb->gap_end < gb->size) {
         gb->gap_end++;
     }
