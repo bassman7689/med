@@ -3,7 +3,7 @@
 int main(int argc, char **argv)
 {
 
-	gap_buffer *current_buff = editor_init();
+	buffer *current_buff = editor_init();
 
 	int ch;
 	bool running = true;

@@ -1,21 +1,21 @@
 #include "editor.h"
 
-gap_buffer *editor_init() {
+buffer *editor_init() {
 	initscr();
 	cbreak();
 	noecho();
 	keypad(stdscr, true);
 	ESCDELAY = 25;
 
-	gap_buffer *current_buffer = new_gap_buffer(2);
-	return current_buffer;
+	buffer *bufer = new_buffer(2);
+	return bufer;
 }
 
-bool editor_handle_input(gap_buffer *current_buff, int ch)
+bool editor_handle_input(buffer *buf, int ch)
 {
 	if (isprint(ch) && ch != 37)
 	{
-		current_buff->point = gap_buffer_insert_at_cursor(current_buff, ch, current_buff->point);
+		buf->point = buffer_insert_at_cursor(buf, ch, buf->point);
 	}
 	else
 	{
@@ -32,23 +32,23 @@ bool editor_handle_input(gap_buffer *current_buff, int ch)
 				break;
 			case KEY_BACKSPACE:
 			case ALT_BACKSPACE:
-				current_buff->point = gap_buffer_delete_backward(current_buff, current_buff->point);
+				buf->point = buffer_delete_backward(buf, buf->point);
 				break;
 			case KEY_ENTER:
 			case ALT_ENTER:
-				current_buff->point = gap_buffer_newline(current_buff, current_buff->point);
+				buf->point = buffer_newline(buf, buf->point);
 				break;
 			case ALT_SPACE:
-				gap_buffer_insert_at_cursor(current_buff, ' ', current_buff->point);
+				buffer_insert_at_cursor(buf, ' ', buf->point);
 			case KEY_UP:
 				break;
 			case KEY_DOWN:
                 break;
 			case KEY_LEFT:
-				current_buff->point = decrement_cursor(current_buff, current_buff->point);
+				buf->point = decrement_cursor(buf, buf->point);
 				break;
 			case KEY_RIGHT:
-				current_buff->point = increment_cursor(current_buff, current_buff->point);
+				buf->point = increment_cursor(buf, buf->point);
 				break;
 			default:
 				mvprintw(0, 0, "UNKNOWN KEY %s : %d", keyname(ch), ch);
@@ -56,20 +56,25 @@ bool editor_handle_input(gap_buffer *current_buff, int ch)
 		}
 	}
 
+    int x, y;
+    cursor_to_screen_coordinates(buf, buf->point, &x, &y);
+    fprintf(stderr, "x = %d, y = %d\n",x,y);
+    move(y, x);
+
 	return true;
 }
 
-void editor_render(gap_buffer *current_buff)
+void editor_render(buffer *buf)
 {
 	erase();
 
-	char *current_file = gap_buffer_render(current_buff);
+	char *current_file = buffer_render(buf);
 	mvprintw(0, 0, "%s", current_file);
 	free(current_file);
 	refresh();
 }
 
-void editor_fini(gap_buffer *current_buff)
+void editor_fini(buffer *buf)
 {
 	ESCDELAY = 1000;
 	keypad(stdscr, FALSE);
@@ -77,8 +82,8 @@ void editor_fini(gap_buffer *current_buff)
 	nocbreak();
 	endwin();
 
-	char *current_file = gap_buffer_render(current_buff);
+	char *current_file = buffer_render(buf);
 	printf("FINAL: \"%s\"\n", current_file);
 	free(current_file);
-	free_gap_buffer(current_buff);
+	free_buffer(buf);
 }
