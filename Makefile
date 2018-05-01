@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-I ./ext/GapBuffer
+CFLAGS=-g
 LDFLAGS=-lncurses
 BUILDDIR=./build
 SRCDIR=./src
@@ -10,7 +10,7 @@ APPNAME=med
 all: $(BUILDDIR) $(APPNAME)
 
 $(APPNAME): $(OBJS)
-	$(CC) $^ -o $(BUILDDIR)/$(APPNAME) $(LDFLAGS)
+	$(CC) $^ -o $(BUILDDIR)/$(APPNAME) $(CFLAGS) $(LDFLAGS)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@

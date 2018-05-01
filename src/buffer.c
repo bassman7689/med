@@ -36,13 +36,17 @@ static void buffer_grow(buffer *b) {
 }
 
 cursor increment_cursor(buffer *b, cursor position) {
-    if(position >= b->size) {
-        return b->size-1;
+    if(position >= (b->size - 1)) {
+        position = b->size-1;
     }
 
     position++;
-    if (position > b->gap_start && position < b->gap_end) {
-        position = b->gap_end;
+    if (position >= b->gap_start && position < b->gap_end) {
+        if (b->gap_end == b->size) {
+            position = b->gap_start;
+        } else {
+            position = b->gap_end + 1;
+        }
     }
 
     assert(position <= b->gap_start || position >= b->gap_end);
@@ -55,8 +59,12 @@ cursor decrement_cursor(buffer *b, cursor position) {
     }
 
     position--;
-    if (position > b->gap_start && position < b->gap_end) {
-        position = b->gap_start;
+    if (position > b->gap_start && position <= b->gap_end) {
+        if(b->gap_start == 0) {
+            position = b->gap_end;
+        } else {
+            position = b->gap_start - 1;
+        }
     }
 
     assert(position <= b->gap_start || position >= b->gap_end);
@@ -127,8 +135,12 @@ cursor buffer_delete_forward(buffer* b, cursor position) {
     return position;
 }
 
-cursor buffer_newline(buffer *b, cursor position) {
-    return buffer_insert_at_cursor(b, '\n', position);
+static cursor end_of_buffer(buffer *b) {
+    if (b->gap_end == b->size) {
+        return b->gap_end;
+    } else {
+        return b->size - 1;
+    }
 }
 
 char buffer_peek(buffer *b, cursor position) {
@@ -146,14 +158,34 @@ char *buffer_render(buffer *b) {
 
 void cursor_to_screen_coordinates(buffer *b, cursor position, int* x, int* y) {
     *x = *y = 0;
-    cursor scanner = 0;
-    for(int scanner = 0; scanner <= position; increment_cursor(b, scanner)) {
-        (*x)++;
+    for(cursor scanner = 0; scanner < position; scanner = increment_cursor(b, scanner)) {
+        *x += 1;
         if(buffer_peek(b, scanner) == '\n') {
-            (*y)++;
+            *y += 1;
             *x = 0;
         }
     }
+}
+
+cursor move_cursor_down_a_line(buffer *b, cursor position) {
+    cursor start = position;
+    int distance_from_newline = 0;
+
+    while(buffer_peek(b, start) != '\n' && start != 0) {
+        start = decrement_cursor(b, start);
+        distance_from_newline++;
+    }
+
+    start++;
+    while(buffer_peek(b, start) != '\n' && start <= end_of_buffer(b)) {
+        start++;
+    }
+
+    if(start != end_of_buffer(b) && start + distance_from_newline < end_of_buffer(b)) {
+        start += distance_from_newline;
+    }
+
+    return start;
 }
 
 void buffer_debug_print(buffer *b) {

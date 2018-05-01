@@ -1,7 +1,9 @@
 #include "editor.h"
 
+WINDOW* win;
+
 buffer *editor_init() {
-	initscr();
+	win = initscr();
 	cbreak();
 	noecho();
 	keypad(stdscr, true);
@@ -13,9 +15,11 @@ buffer *editor_init() {
 
 bool editor_handle_input(buffer *buf, int ch)
 {
-	if (isprint(ch) && ch != 37)
+	if (isprint(ch) && (ch != ALT_SPACE ||
+            ch != KEY_ENTER ||
+            ch != ALT_ENTER))
 	{
-		buf->point = buffer_insert_at_cursor(buf, ch, buf->point);
+        buf->point = buffer_insert_at_cursor(buf, ch, buf->point);
 	}
 	else
 	{
@@ -36,13 +40,16 @@ bool editor_handle_input(buffer *buf, int ch)
 				break;
 			case KEY_ENTER:
 			case ALT_ENTER:
-				buf->point = buffer_newline(buf, buf->point);
+				buffer_insert_at_cursor(buf, '\n', buf->point);
 				break;
 			case ALT_SPACE:
 				buffer_insert_at_cursor(buf, ' ', buf->point);
 			case KEY_UP:
 				break;
 			case KEY_DOWN:
+                fprintf(stderr, "buf->point = %d", buf->point);
+                buf->point = move_cursor_down_a_line(buf, buf->point);
+                fprintf(stderr, "buf->point = %d", buf->point);
                 break;
 			case KEY_LEFT:
 				buf->point = decrement_cursor(buf, buf->point);
@@ -56,11 +63,6 @@ bool editor_handle_input(buffer *buf, int ch)
 		}
 	}
 
-    int x, y;
-    cursor_to_screen_coordinates(buf, buf->point, &x, &y);
-    fprintf(stderr, "x = %d, y = %d\n",x,y);
-    move(y, x);
-
 	return true;
 }
 
@@ -70,6 +72,10 @@ void editor_render(buffer *buf)
 
 	char *current_file = buffer_render(buf);
 	mvprintw(0, 0, "%s", current_file);
+    int x, y;
+    cursor_to_screen_coordinates(buf, buf->point, &x, &y);
+    //fprintf(stderr, "buf->point = %d, x = %d, y = %d\n", buf->point, x, y);
+    wmove(win, y, x);
 	free(current_file);
 	refresh();
 }

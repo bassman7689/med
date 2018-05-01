@@ -9,8 +9,8 @@ typedef unsigned int cursor;
 
 typedef struct buffer_t {
     char* data;
-    unsigned int gap_start;
-    unsigned int gap_end;
+    cursor gap_start;
+    cursor gap_end;
     unsigned int size;
     cursor point;
 } buffer;
@@ -26,5 +26,6 @@ char *buffer_render(buffer *b);
 
 cursor increment_cursor(buffer *b, cursor position);
 cursor decrement_cursor(buffer *b, cursor position);
+cursor move_cursor_down_a_line(buffer *b, cursor position);
 void cursor_to_screen_coordinates(buffer *b, cursor position, int *x, int *y);
 #endif
